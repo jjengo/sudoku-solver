@@ -55,12 +55,9 @@ class Node(object):
         self.complete = True
 
         for y in range(Height):
-            row = []
-            for x in range(Width):
-                tile = Tile(values[y][x])
-                if not tile.value:
-                    self.complete = False
-                row.append(tile)
+            row = [Tile(values[y][x]) for x in range(Width)]
+            if self.complete and not all(tile.value for tile in row):
+                self.complete = False
             self.tiles.append(row)
 
         if not self.complete:
@@ -76,32 +73,26 @@ class Node(object):
 
     # Constraints for a tile at x,y
     def get_constraints_at(self, y, x):
-        constraints = []
         if not self.tiles[y][x].value:
-            for value in Values:
-                if self.forward_check(value, y, x):
-                    constraints.append(value)
-        return constraints
+            return [val for val in Values if self.forward_check(val, y, x)]
+        else:
+            return []
 
     # Column, row and 3x3 box cannot have more than one value
     def forward_check(self, value, ypos, xpos):
 
-        for i in range(Height):
-            if ypos != i and self.tiles[i][xpos].value == value:
-                return False
-        for i in range(Width):
-            if xpos != i and self.tiles[ypos][i].value == value:
-                return False
-            
+        if any(ypos != i and self.tiles[i][xpos].value == value for i in range(Height)):
+            return False
+        if any(xpos != i and self.tiles[ypos][i].value == value for i in range(Width)):
+            return False
+
         xstart = int(xpos / 3) * 3
         ystart = int(ypos / 3) * 3
         for y in range(ystart, ystart + 3):
             for x in range(xstart, xstart + 3):
-                if xpos == x and ypos == y:
-                    continue
-                if self.tiles[y][x].value == value:
+                if (xpos != x or ypos != y) and self.tiles[y][x].value == value:
                     return False
-        
+
         return True
     
     # Get all row, column and 3x3 arcs in both directions.
